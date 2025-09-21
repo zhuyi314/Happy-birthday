@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <title>生日快乐·异世烟花</title>
+
+  <!--
+  ========================  可编辑配置（零代码友好）  ========================
+  - login.username / login.password：身份登录用的“正确答案”
+  - stories.*：三条剧情的图/文/音/诗句答案/主题（图片与音频放 /assets 下）
+  - fireworkOnlineURL：联网烟花地址
+  - fireworkLocalURL：内联本地烟花入口
+  - FIREWORK_PRIORITY：'online-first'（默认更快）或 'local-first'
+  - UI_SIZE / THEME：宽高/主题色
+  ========================================================================
+  -->
+  <script>
+    window.APP_CONFIG = {
+      login: {
+        username: '某人',  // ← 可改：昵称
+        password: '0000',  // ← 可改：生日四位
+      },
+
+      stories: {
+        adventure: { // 奇遇（蓝）
+          bgImage: 'assets/xiaoyu.jpg',   // ← 可改：背景图
+          audio:   'assets/xiaoyu.mp3',   // ← 可改：配乐
+          text: '总有些惊奇的际遇，\n比方说，\n当我遇见你。\n你那双温柔剔透的眼睛，\n出现在我梦里。',
+          poemTop: '雨飘零，雪飘零。\n雨雪交织难远行。',
+          poemAnswer: '此心唯念卿',       // ← 可改：诗句正确答案
+          theme: 'blue',
+          finalMessage: '我用心去爱你的过程，\n也正是我热爱生活的过程。' // ← 可改：终章文案
+        },
+        wish: { // 愿望（红）
+          bgImage: 'assets/happy.jpg',
+          audio:   'assets/happy.mp3',
+          text: '祈愿妖灵，\n祝万水盈盈，\n千山长青，\n群峰开心。',
+          poemTop: '朱颜长似，头上花枝，',
+          poemAnswer: '岁岁年年',
+          theme: 'red',
+          finalMessage: '烟花并非转瞬即逝，\n我有金手指，\n可让它循环千万次。'
+        },
+        nature: { // 向阳（绿）
+          bgImage: 'assets/mellow.jpg',
+          audio:   'assets/mellow.mp3',
+          text: '采芍赠兰，\n娇痴成憨，\n昕夕不见，\n萦怀天寒。',
+          poemTop: '南长亭，北长亭。南北情人万里星。',
+          poemAnswer: '相思似月明',
+          theme: 'green',
+          finalMessage: '爱自己是终生浪漫的开始。'
+        }
+      },
+
+      fireworkOnlineURL: 'https://firework.lujianxin.com/#pt_1758204936088', // ← 可改：在线烟花地址
+      fireworkLocalURL:  'assets/firework/index.html',                       // ← 可改：内联烟花入口
+      FIREWORK_PRIORITY: 'online-first', // ← 可改：'online-first'（更快）/ 'local-first'（内联优先）
+
+      UI_SIZE: {
+        panelW: 560,        // ← 卡片宽度
+        panelWWide: 740,    // ← 场景页宽度
+        controlW: 520,      // ← 底部控制条宽度
+        ornamentSize: 200   // ← 左气球/右灯尺寸
+      },
+      THEME: {              // ← 可改：主题色（[背景1, 背景2, 渐变色1, 渐变色2]）
+        blue:  ['#0b1020','#0d1b2a','#2563eb','#06b6d4'],
+        red:   ['#1b0b10','#2a0d12','#fb7185','#f97316'],
+        green: ['#0b1b16','#0d2a1f','#10b981','#84cc16']
+      }
+    };
+  </script>
+
+  <style>
+    :root{
+      --panel-w:560px; --panel-w-wide:740px; --panel-max-h:86vh;
+      --control-w:520px;
+      --ornament-size:200px;
+      --balloon-top:12px; --balloon-left:16px;
+
+      --scene-card-shift:3vh;
+      --scene-dark-1:rgba(0,0,0,0.22);
+      --scene-dark-2:rgba(0,0,0,0.14);
+      --typewriter-min:110ms; --typewriter-max:165ms;
+
+      --theme-grad-start:#3b82f6;
+      --theme-grad-end:#06b6d4;
+
+      --curtain-duration:2200ms;
+
+      --exit-size:44px; --exit-gap:16px;
+
+      --select-shift:1vh; --cake-top:23vh;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      font-family:"Microsoft Yahei",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      color:#fff; overflow:hidden; -webkit-tap-highlight-color:transparent;
+      background:
+        radial-gradient(1200px 800px at 15% 10%, #0b1020 0%, transparent 60%),
+        linear-gradient(135deg, #0f172a, #1e293b, #0ea5e9, #8b5cf6);
+      background-size:100% 100%, 400% 400%;
+      animation:bgMove 18s ease infinite;
+    }
+    @keyframes bgMove{ 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+
+    /* 萤火虫漂移动效（修复：补上关键帧） */
+    @keyframes fly{
+      0%   { transform:translate(0,0) scale(1); opacity:.9 }
+      25%  { transform:translate(40px,-30px) scale(1.1) }
+      50%  { transform:translate(-20px,20px) scale(.9); opacity:.7 }
+      75%  { transform:translate(30px,40px) scale(1) }
+      100% { transform:translate(0,0) scale(1); opacity:.9 }
+    }
+
+    .glass{ position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+      width:var(--panel-w); max-width:96vw; max-height:var(--panel-max-h);
+      overflow:auto; padding:26px; border-radius:16px;
+      background:rgba(20,24,31,.35);
+      border:1px solid rgba(255,255,255,.18);
+      backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+      box-shadow:0 10px 30px rgba(0,0,0,.28); text-align:center; z-index:700; }
+    .glass.wide{ width:var(--panel-w-wide); }
+    .hidden{ display:none!important; }
+
+    h2.gradient{ font-weight:800; font-size:1.6rem; margin-bottom:12px;
+      background:linear-gradient(90deg,#60a5fa,#22d3ee,#a78bfa,#34d399);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .muted{ opacity:.98; font-size:.96rem; margin-bottom:8px; color:#f3f4f6 }
+
+    input[type=text],input[type=password]{ width:86%; padding:12px 14px; border-radius:999px;
+      border:2px solid rgba(255,255,255,.28); margin:8px auto; display:block;
+      background:rgba(255,255,255,.18); color:#0f172a; font-weight:800; outline:none; transition:border-color .2s, box-shadow .2s; }
+    input.invalid{ border-color:#ef4444!important; box-shadow:0 0 0 3px rgba(239,68,68,.25); }
+    input::placeholder{ color:rgba(15,23,42,.65); font-weight:900; }
+    button{ padding:12px 16px; border-radius:12px; border:none; cursor:pointer; font-weight:800; margin:6px;
+      box-shadow:0 8px 20px rgba(0,0,0,.18); transition:transform .18s ease, box-shadow .18s ease; }
+    button:hover{ transform:translateY(-2px); box-shadow:0 14px 28px rgba(0,0,0,.22); }
+    .row{ display:flex; gap:12px; justify-content:center; align-items:center; flex-wrap:wrap; }
+
+    .btn-primary{ background:linear-gradient(90deg,#0ea5e9,#2563eb); color:#fff; }
+    .btn-ghost{ background:transparent; border:1px solid rgba(255,255,255,.35); color:#e2e8f0; }
+
+    .pick-grid{ display:flex; gap:12px; justify-content:center; align-items:center; margin-top:14px; flex-wrap:wrap; }
+    .pick-grid button{ flex:1; min-width:160px; }
+    .btn-blue{  background:linear-gradient(90deg,#3b82f6,#06b6d4); color:#fff; }
+    .btn-red{   background:linear-gradient(90deg,#fb7185,#f97316); color:#fff; }
+    .btn-green{ background:linear-gradient(90deg,#10b981,#84cc16); color:#fff; }
+
+    #controlPanel{ position:fixed; left:50%; bottom:18px; transform:translateX(-50%);
+      width:var(--control-w); max-width:92vw; padding:10px 12px; border-radius:12px;
+      background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.12);
+      backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+      box-shadow:0 12px 36px rgba(0,0,0,.22); z-index:680; }
+    .panel-row{ display:flex; gap:10px; align-items:center; margin:6px 0; }
+    .ctrl-box{ flex:1; padding:8px; border-radius:10px; background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.06); }
+    .label{ font-size:12px; font-weight:800; margin-bottom:6px; display:block; color:rgba(255,255,255,.95) }
+    input[type=range]{ width:100%; height:8px; background:linear-gradient(90deg,#60a5fa,#a78bfa,#34d399); border-radius:999px; outline:none; -webkit-appearance:none; }
+    input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:16px; height:16px; border-radius:50%; background:#fff; border:3px solid #60a5fa; cursor:pointer; }
+    .time{ font-size:12px; color:rgba(255,255,255,.9); font-weight:800; }
+
+    #cakeDecor{ position:fixed; left:50%; top:var(--cake-top); transform:translateX(-50%); z-index:690; width:220px; height:auto; opacity:.96;
+      filter:drop-shadow(0 14px 28px rgba(0,0,0,.28)); animation:cakeFloat 5.5s ease-in-out infinite; pointer-events:none; }
+    @keyframes cakeFloat{ 0%{transform:translate(-50%,0)} 50%{transform:translate(-50%,-6px)} 100%{transform:translate(-50%,0)} }
+    body.stage-select #musicPage{ transform:translate(-50%, calc(-50% + var(--select-shift))); }
+
+    .scene-card{ width:var(--panel-w-wide); aspect-ratio:16/9; max-height:var(--panel-max-h);
+      background-image:
+        linear-gradient(180deg, var(--scene-dark-1), var(--scene-dark-1)),
+        radial-gradient(70% 60% at 50% 40%, var(--scene-dark-2), rgba(0,0,0,0)),
+        var(--scene-image-url);
+      background-size: cover, cover, cover;
+      background-repeat:no-repeat; background-position:center; }
+    body.mode-scene #firstScene{ transform:translate(-50%, calc(-50% + var(--scene-card-shift))); }
+
+    .scene-content{ background:transparent; border:none; border-radius:0; padding:14px; position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    .scene-center{ max-width:88%; margin:auto; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.45); }
+    .scene-title{ font-size:1.4rem; font-weight:800; margin-bottom:6px; }
+    .scene-sub{ opacity:.95; margin-bottom:12px; }
+    .scene-text{ min-height:84px; white-space:pre-wrap; font-weight:800; line-height:1.7; letter-spacing:.2px; }
+
+    #sceneCTA{ position:fixed; left:50%; transform:translateX(-50%); z-index:705; }
+    #sceneCTA button{ background:linear-gradient(90deg,var(--theme-grad-start),var(--theme-grad-end)); color:#fff; padding:12px 18px; border-radius:12px; font-weight:900; border:none; cursor:pointer; box-shadow:0 10px 24px rgba(0,0,0,.22); }
+
+    /* 还原原配色的气球与天灯（无滤镜） */
+    #hotAirBalloon{ position:fixed; left:var(--balloon-left); top:var(--balloon-top); width:var(--ornament-size); height:auto; z-index:900; cursor:pointer; opacity:0; pointer-events:none; transition:opacity .45s ease, transform .45s ease; animation:balloonFloat 6s ease-in-out infinite; touch-action:none; }
+    #hotAirBalloon.visible{ opacity:1; pointer-events:auto; }
+    @keyframes balloonFloat{ 0%{transform:translateY(0) rotate(-2deg)} 50%{transform:translateY(-10px) rotate(2deg)} 100%{transform:translateY(0) rotate(-2deg)} }
+
+    #skyLantern{ position:fixed; right:16px; top:16px; width:var(--ornament-size); height:auto; z-index:890; opacity: 0; pointer-events:none; animation:lanternFloat 7s ease-in-out infinite; transition:opacity .45s ease; filter:drop-shadow(0 12px 24px rgba(0,0,0,.35)); }
+    #skyLantern.visible{ opacity:.95; }
+    @keyframes lanternFloat{ 0%{transform:translateY(0) rotate(1deg)} 50%{transform:translateY(-10px) rotate(-1deg)} 100%{transform:translateY(0) rotate(1deg)} }
+
+    /* 灯笼竖幅文字：竖排、不换列、垂直居中、轻微内边距避免贴边 */
+    #verticalBanner .vtext{
+      width:100%; height:100%;
+      display:flex; align-items:center; justify-content:center;
+      writing-mode: vertical-rl;      /* 竖排 */
+      text-orientation: upright;      /* 汉字直立 */
+      white-space: nowrap;            /* 禁止换列 */
+      word-break: keep-all;           /* 不拆字 */
+      padding-block: 2px;             /* 上下各 2px，避免文字贴着描边 */
+      font-weight:800; font-size:14px;
+      line-height:1; letter-spacing:.1em; color:#111;
+    }
+
+    /* 气球提示 */
+    #hint{ position:fixed; left:calc(var(--balloon-left) + var(--ornament-size) + 12px); top:calc(var(--balloon-top) + 12px); transform:translateY(4px); background:rgba(255,255,255,.95); color:#111; padding:8px 14px; border-radius:14px; font-weight:800; z-index:880; opacity:0; transition:opacity .35s, transform .35s; box-shadow:0 10px 30px rgba(0,0,0,.15); }
+    #hint.show{ opacity:1; transform:translateY(0); }
+
+    .vparticle{ position:fixed; pointer-events:none; z-index:850; will-change:transform,opacity; }
+
+    .shake{ animation:shake .48s }
+    @keyframes shake{ 0%{transform:translateX(0)} 25%{transform:translateX(-8px)} 50%{transform:translateX(8px)} 75%{transform:translateX(-6px)} 100%{transform:translateX(0)} }
+
+    /* 诗句页（提示已移除） */
+    #poemHint{ display:none; }
+
+    #balloonCurtain{ position:fixed; inset:0; z-index:1200; pointer-events:none; overflow:hidden; }
+    .curtain-balloon{ position:absolute; bottom:-20vh; width:64px; height:auto; opacity:0; filter:drop-shadow(0 10px 20px rgba(0,0,0,.3)); }
+
+    #fwWrap{ position:fixed; inset:0; z-index:650; pointer-events:none; overflow:hidden; }
+    #fwWrap iframe{ width:100%; height:100%; border:0; display:block; backface-visibility:hidden; transform:translateZ(0); }
+    body.clean #controlPanel, body.clean .glass, body.clean #hotAirBalloon, body.clean #hint, body.clean #skyLantern, body.clean #cakeDecor{ display:none!important; }
+    #exitCleanBtn{ position:fixed; right:var(--exit-gap); top:var(--exit-gap); width:var(--exit-size); height:var(--exit-size); border-radius:999px; background:rgba(255,255,255,.9); color:#111; font-weight:900; border:0; z-index:1400; cursor:pointer; box-shadow:0 12px 30px rgba(0,0,0,.25); display:none; }
+    body.clean #exitCleanBtn{ display:block; }
+
+    #toastWrap{ position:fixed; left:50%; top:16px; transform:translateX(-50%); z-index:1400; display:flex; flex-direction:column; gap:10px; pointer-events:none; }
+    .toast{ min-width:260px; max-width:86vw; padding:10px 14px; border-radius:12px; font-weight:800; color:#111; background:#fef3c7; border:1px solid #fde68a; box-shadow:0 10px 26px rgba(0,0,0,.2); animation:toastIn .28s ease; }
+    .toast.error{ background:#fecaca; border-color:#fca5a5; }
+    @keyframes toastIn{ from{transform:translate(-50%,10px);opacity:0} to{transform:translate(-50%,0);opacity:1} }
+
+    .final-badge{ display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; font-size:12px; font-weight:900; background:linear-gradient(90deg,var(--theme-grad-start),var(--theme-grad-end)); color:#fff; box-shadow:0 8px 20px rgba(0,0,0,.18); margin:0 auto 10px; user-select:none; }
+    .final-badge small{ opacity:.92; font-weight:800 }
+
+    @media (max-width:560px){
+      :root{ --scene-card-shift:6vh; --select-shift:8vh; --cake-top:2.8vh; --ornament-size:160px; }
+      .glass, .glass.wide, #controlPanel{ width:92vw; }
+      #controlPanel{ bottom:10px; }
+      input[type=text],input[type=password]{ font-size:16px; }
+      #sceneCTA button{ padding:12px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <script>
+    (function spawnFireflies(n=28){
+      for(let i=0;i<n;i++){
+        const f=document.createElement('div'); f.className='firefly';
+        const size=4+Math.random()*5; f.style.width=size+'px'; f.style.height=size+'px';
+        f.style.position='fixed'; f.style.zIndex='50'; f.style.pointerEvents='none'; f.style.borderRadius='50%';
+        f.style.background='radial-gradient(circle,#fff 0%, #a7f3d0 35%, transparent 70%)';
+        f.style.boxShadow='0 0 6px 2px rgba(167,243,208,.8)';
+        f.style.left=(Math.random()*100)+'vw'; f.style.top=(Math.random()*100)+'vh';
+        f.style.opacity=(0.6+Math.random()*0.4).toFixed(2);
+        f.style.animation=`fly ${10+Math.random()*12}s ease-in-out ${Math.random()*10}s infinite`;
+        document.body.appendChild(f);
+      }
+    })();
+  </script>
+
+  <div id="toastWrap" aria-live="polite"></div>
+
+  <!-- 登录页 -->
+  <div class="glass" id="loginPage" role="dialog" aria-modal="true">
+    <h2 class="gradient">欢迎来到异世界</h2>
+    <input id="username" type="text" placeholder="请输入昵称（限定：某人）" autocomplete="off" inputmode="text" aria-label="昵称"/>
+    <input id="password" type="password" placeholder="请输入生日（限定：0000）" autocomplete="off" inputmode="numeric" aria-label="生日四位数字"/>
+    <div class="row" style="margin-top:10px">
+      <button class="btn-primary" id="btnIdLogin">身份登录</button>
+      <button class="btn-ghost" id="btnAnonLogin">匿名登录</button>
+    </div>
+  </div>
+
+  <!-- 顶端大蛋糕 -->
+  <div id="cakeDecor" class="hidden" aria-hidden="true">
+    <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
+      <rect x="30" y="90" width="180" height="60" rx="10" fill="#fde68a" stroke="#f59e0b" stroke-width="2"/>
+      <path d="M30,90 Q60,60 90,90 T150,90 T210,90 L30,90Z" fill="#fff1f2"/>
+      <rect x="70" y="70" width="100" height="24" rx="8" fill="#fbcfe8"/>
+      <g><rect x="90" y="48" width="8" height="22" rx="2" fill="#60a5fa"/><path d="M94,40 q6,6 0,12 q-6,-6 0,-12Z" fill="#fb923c"/></g>
+      <g><rect x="116" y="44" width="8" height="26" rx="2" fill="#34d399"/><path d="M120,36 q6,6 0,12 q-6,-6 0,-12Z" fill="#fb923c"/></g>
+      <g><rect x="142" y="48" width="8" height="22" rx="2" fill="#a78bfa"/><path d="M146,40 q6,6 0,12 q-6,-6 0,-12Z" fill="#fb923c"/></g>
+    </svg>
+  </div>
+
+  <!-- 选剧情页 -->
+  <div class="glass wide hidden" id="musicPage" role="region" aria-label="选剧情">
+    <h2 class="gradient">请选择想要的剧情</h2>
+    <div class="pick-grid">
+      <button class="btn-green"  onclick="chooseStory('nature', event)">向阳</button>
+      <button class="btn-red"    onclick="chooseStory('wish', event)">愿望</button>
+      <button class="btn-blue"   onclick="chooseStory('adventure', event)">奇遇</button>
+    </div>
+  </div>
+
+  <!-- 底部播放器 -->
+  <div id="controlPanel" class="hidden" aria-label="播放控制">
+    <div class="panel-row">
+      <div class="ctrl-box">
+        <label class="label">🎼 播放进度</label>
+        <input type="range" id="progressBar" min="0" value="0">
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <div class="time" id="curTime">00:00</div>
+          <div class="time" id="durTime">--:--</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel-row">
+      <div class="ctrl-box" style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <label class="label">🔊 音量</label>
+          <input type="range" id="volumeBar" min="0" max="1" step="0.01" value="0.85">
+        </div>
+        <div style="width:64px;text-align:center">
+          <div id="muteBtn" style="font-weight:800;cursor:pointer;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.06)">🔊</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第一剧情页 -->
+  <div class="glass scene-card hidden" id="firstScene" aria-live="polite">
+    <div class="scene-content">
+      <div class="scene-center">
+        <h2 class="gradient scene-title" id="sceneTitle">故事</h2>
+        <div class="muted scene-sub" id="sceneSub">副标题</div>
+        <div class="scene-text" id="sceneText"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 场景 CTA -->
+  <div id="sceneCTA" class="hidden">
+    <button id="poemButton" onclick="goToPoem()">继续旅程</button>
+  </div>
+
+  <!-- 左上热气球（原配色） -->
+  <div id="hotAirBalloon" aria-label="点击热气球可播放/暂停音乐" tabindex="0">
+    <svg viewBox="0 0 200 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="false">
+      <defs>
+        <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#ffd7ea"/><stop offset="50%" stop-color="#ff9aeb"/><stop offset="100%" stop-color="#ff7fa8"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="100" cy="100" rx="80" ry="100" fill="url(#g1)" stroke="rgba(0,0,0,.06)" stroke-width="1"/>
+      <path d="M40,60 C60,40 140,40 160,60" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="10" stroke-linecap="round" opacity=".25"/>
+      <path d="M45,90 C70,70 130,70 155,90" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="6" stroke-linecap="round" opacity=".35"/>
+      <line x1="78" y1="190" x2="84" y2="247" stroke="#8b5e3c" stroke-width="3" stroke-linecap="round"/>
+      <line x1="122" y1="190" x2="116" y2="247" stroke="#8b5e3c" stroke-width="3" stroke-linecap="round"/>
+      <g><rect x="76" y="247" width="48" height="36" rx="6" ry="6" fill="#c48a64" stroke="#8b5e3c" stroke-width="2"/><rect x="82" y="252" width="36" height="12" rx="3" ry="3" fill="#fff" opacity=".08"/></g>
+      <text id="balloonIcon" x="100" y="270" font-size="20" text-anchor="middle" fill="#fff" font-weight="700">▶</text>
+    </svg>
+  </div>
+
+  <!-- 右上天灯（原配色 + 竖幅文字垂直居中） -->
+  <div id="skyLantern" aria-hidden="true">
+    <svg viewBox="0 0 220 320" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="lanternGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fff7ed"/><stop offset="100%" stop-color="#ffd7ae"/>
+        </linearGradient>
+      </defs>
+      <g opacity=".95">
+        <path d="M110 10 C160 20 190 55 190 110 C190 155 165 210 110 260 C55 210 30 155 30 110 C30 55 60 20 110 10Z" fill="url(#lanternGrad)" stroke="rgba(0,0,0,.08)" stroke-width="2"/>
+        <rect x="100" y="150" width="20" height="30" rx="3" fill="#fff" opacity=".75"/>
+        <ellipse cx="110" cy="245" rx="12" ry="7" fill="#ffb703" opacity=".7"/>
+      </g>
+      <line x1="110" y1="230" x2="95" y2="255"  stroke="#d4a373" stroke-width="2"/>
+      <line x1="110" y1="230" x2="125" y2="255" stroke="#d4a373" stroke-width="2"/>
+
+      <!-- 竖幅：底层白底 → 内容 → 顶层描边（避免 foreignObject 覆盖描边） -->
+      <g id="verticalBanner">
+        <rect x="88" y="255" width="44" height="76" rx="8" fill="#ffffff"/>
+        <foreignObject x="88" y="255" width="44" height="76">
+          <div xmlns="http://www.w3.org/1999/xhtml" class="vtext">生日快乐</div>
+        </foreignObject>
+        <rect x="88" y="255" width="44" height="76" rx="8" fill="none" stroke="#f59e0b" stroke-width="2"/>
+      </g>
+    </svg>
+  </div>
+
+  <div id="hint">🎈 点击热气球可播放 / 暂停音乐</div>
+
+  <!-- 诗句页（无提示条） -->
+  <div class="glass hidden" id="poemPage">
+    <h2 class="gradient">人生如诗</h2>
+    <div class="muted">请输入下半句以进入下一章</div>
+    <div style="min-height:90px;display:flex;align-items:center;justify-content:center;flex-direction:column">
+      <div id="poemTop" style="font-weight:900;font-size:20px;color:rgba(255,255,255,.95);margin-bottom:12px"></div>
+      <input id="poemInput" type="text" placeholder="请输入下半句（不区分大小写/标点）" style="width:86%;padding:10px 12px;border-radius:10px;border:none;background:rgba(255,255,255,.12);color:#111;font-weight:700">
+      <div style="margin-top:12px" class="row">
+        <button onclick="checkPoemAnswer()" style="background:linear-gradient(90deg,var(--theme-grad-start),var(--theme-grad-end));color:#fff">提交答案</button>
+        <button class="btn-ghost" onclick="autoCompletePoem()">自动补全</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 终章 -->
+  <div class="glass hidden" id="finalPage">
+    <h2 class="gradient">生日烟花秀</h2>
+    <div id="finalBadge" class="final-badge hidden" aria-hidden="true"><small>剧情线</small><span id="finalBadgeText">—</span></div>
+    <div id="finalText" style="min-height:140px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.98);font-weight:800;text-shadow:0 2px 10px rgba(0,0,0,.35);white-space:pre-wrap"></div>
+    <div class="row" style="margin-top:12px">
+      <button onclick="restart()" class="btn-primary">时间回溯</button>
+      <button class="btn-ghost" onclick="enterCleanFirework()">清屏观看</button>
+    </div>
+  </div>
+
+  <!-- 过场层：气球幕 -->
+  <div id="balloonCurtain" class="hidden" aria-hidden="true"></div>
+
+  <!-- 全屏烟花 -->
+  <div id="fwWrap" class="hidden" aria-hidden="true">
+    <iframe id="fwFrame" title="Firework Background" loading="lazy" referrerpolicy="no-referrer" allow="autoplay; fullscreen"></iframe>
+  </div>
+
+  <button id="exitCleanBtn" onclick="exitCleanFirework()" title="退出清屏">✕</button>
+
+  <audio id="bgm" preload="auto"></audio>
+
+  <script>
+    const state={ intervals:[], timeouts:[], particlesRunning:false, lastVolume: Number(localStorage.getItem('vol') ?? 0.85), currentKey:null, story:{}, theme:null, fwLoaded:false };
+    const $=id=>document.getElementById(id);
+    const body=document.body;
+    const cfg=window.APP_CONFIG; const STORIES=cfg.stories;
+
+    const loginPage=$('loginPage'), musicPage=$('musicPage'), firstScene=$('firstScene'), poemPage=$('poemPage'), finalPage=$('finalPage');
+    const hotAirBalloon=$('hotAirBalloon'), balloonIcon=$('balloonIcon'), skyLantern=$('skyLantern'), hint=$('hint');
+    const controlPanel=$('controlPanel'), progressBar=$('progressBar'), volumeBar=$('volumeBar'), curTime=$('curTime'), durTime=$('durTime'), muteBtn=$('muteBtn');
+    const bgm=$('bgm'), sceneTitle=$('sceneTitle'), sceneSub=$('sceneSub'), sceneText=$('sceneText');
+    const sceneCTA=$('sceneCTA'), poemTop=$('poemTop'), poemInput=$('poemInput'), finalText=$('finalText'), balloonCurtain=$('balloonCurtain'), fwWrap=$('fwWrap'), fwFrame=$('fwFrame'), exitCleanBtn=$('exitCleanBtn');
+
+    function trackInterval(id){ state.intervals.push(id); }
+    function trackTimeout(id){ state.timeouts.push(id); }
+    function clearAllTimers(){ state.intervals.forEach(clearInterval); state.timeouts.forEach(clearTimeout); state.intervals.length=0; state.timeouts.length=0; }
+    const hideAll=()=>[loginPage,musicPage,firstScene,poemPage,finalPage].forEach(e=>e.classList.add('hidden'));
+    const fmtTime=s=>{ if(!s||isNaN(s)) return '--:--'; const m=Math.floor(s/60),sec=Math.floor(s%60); return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`; };
+
+    function setBodyTheme(t){
+      const map=cfg.THEME[t]||cfg.THEME.blue; // [bg1,bg2,grad1,grad2]
+      body.style.setProperty('--theme-grad-start', map[2]);
+      body.style.setProperty('--theme-grad-end',   map[3]);
+      body.style.background = `
+        radial-gradient(1200px 800px at 15% 10%, ${map[0]} 0%, transparent 60%),
+        linear-gradient(135deg, ${map[0]}, ${map[1]}, ${map[2]}, ${map[3]})
+      `;
+    }
+
+    function typeWriterMulti(text, elId, cb){
+      const el=$(elId); el.textContent=''; let i=0;
+      const min=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--typewriter-min'))||40;
+      const max=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--typewriter-max'))||80;
+      (function step(){
+        if(i<text.length){ el.textContent+=text.charAt(i++); const delay=min+Math.random()*max; trackTimeout(setTimeout(step,delay)); }
+        else if(cb) cb();
+      })();
+    }
+
+    /* 登录错误：把占位符改为正确答案，红边 + 抖动（不显示“错误提示语”） */
+    function markInvalidToAnswer(inp, answer){
+      inp.classList.add('invalid','shake'); inp.value='';
+      inp.placeholder=answer; // ← 显示正确答案
+      setTimeout(()=>{ inp.classList.remove('shake'); },480);
+      setTimeout(()=>{ inp.classList.remove('invalid'); },2000);
+    }
+
+    /* 播放器与音量记忆 */
+    volumeBar.value=state.lastVolume; bgm.volume=volumeBar.value; muteBtn.textContent=bgm.volume<=0.03?'🔈':'🔊';
+    volumeBar.addEventListener('input',()=>{ bgm.volume=volumeBar.value; state.lastVolume=bgm.volume; localStorage.setItem('vol', String(state.lastVolume)); muteBtn.textContent=bgm.volume<=0.03?'🔈':'🔊'; });
+    muteBtn.addEventListener('click',()=>{ if(bgm.volume>0.03){ state.lastVolume=bgm.volume; bgm.volume=0; volumeBar.value=0; muteBtn.textContent='🔈'; } else { bgm.volume=Number(state.lastVolume||0.85); volumeBar.value=bgm.volume; muteBtn.textContent='🔊'; } });
+    bgm.addEventListener('loadedmetadata',()=>{ if(bgm.duration && !isNaN(bgm.duration)){ progressBar.max=Math.floor(bgm.duration); durTime.textContent=fmtTime(bgm.duration); } });
+    bgm.addEventListener('timeupdate',()=>{ if(!isNaN(bgm.duration) && !progressBar.dragging){ progressBar.value=Math.floor(bgm.currentTime||0); curTime.textContent=fmtTime(bgm.currentTime);} });
+    progressBar.addEventListener('input',()=>{ bgm.currentTime=progressBar.value; curTime.textContent=fmtTime(progressBar.value); });
+
+    /* 两侧对称掉落（热气球 & 天灯） */
+    function createSVG(tag,attrs={}){ const ns='http://www.w3.org/2000/svg'; const el=document.createElementNS(ns,tag); for(const k in attrs) el.setAttribute(k,attrs[k]); return el; }
+    function emitFallingTreatFrom(anchorEl, side='left'){
+      if (!anchorEl) return;
+      const container=document.createElement('div'); container.className='vparticle';
+      const rect=anchorEl.getBoundingClientRect();
+      const startX = side==='left' ? rect.left + rect.width*0.5 + (Math.random()*24-12)
+                                   : rect.right - rect.width*0.5 + (Math.random()*24-12);
+      const startY = rect.top + rect.height*0.80 + (Math.random()*8-4);
+      container.style.left=startX+'px'; container.style.top=startY+'px';
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('width','28'); svg.setAttribute('height','28'); svg.setAttribute('viewBox','0 0 24 24');
+      const kind=Math.random()<0.55?'cake':'candy';
+      if(kind==='cake'){
+        const base=createSVG('rect',{x:4,y:10,width:16,height:8,rx:2,fill:'#f4b4a5'});
+        const cream=createSVG('path',{d:'M4,10 Q8,6 12,10 T20,10 L4,10 Z',fill:'#fff1f2'});
+        const cherry=createSVG('circle',{cx:12,cy:7,r:1.6,fill:'#ef4444'});
+        svg.appendChild(base); svg.appendChild(cream); svg.appendChild(cherry);
+      }else{
+        const core=createSVG('rect',{x:7,y:8,width:10,height:8,rx:3,fill:'#fde68a',stroke:'#f59e0b','stroke-width':'1'});
+        const left=createSVG('path',{d:'M7,12 L3,9 L3,15 Z',fill:'#fcd34d',opacity:'0.9'});
+        const right=createSVG('path',{d:'M17,12 L21,9 L21,15 Z',fill:'#fcd34d',opacity:'0.9'});
+        svg.appendChild(left); svg.appendChild(core); svg.appendChild(right);
+      }
+      container.appendChild(svg); document.body.appendChild(container);
+      const dx=(Math.random()*60-30) * (side==='left'?1:-1);
+      const dy=140+Math.random()*120, rot=(Math.random()*60-30), dur=1200+Math.random()*900;
+      container.animate([{transform:'translate(0px,0px) rotate(0deg)',opacity:1},{transform:`translate(${dx}px,${dy}px) rotate(${rot}deg)`,opacity:0.0}],{duration:dur,easing:'cubic-bezier(.2,.9,.3,1)'});
+      setTimeout(()=>container.remove(),dur+60);
+    }
+    let particleIntervalL=null, particleIntervalR=null;
+    function startParticles(){ if(state.particlesRunning) return; state.particlesRunning=true; particleIntervalL=setInterval(()=>{ emitFallingTreatFrom(hotAirBalloon,'left'); },520); particleIntervalR=setInterval(()=>{ emitFallingTreatFrom(skyLantern,'right'); },620); trackInterval(particleIntervalL); trackInterval(particleIntervalR); }
+    function stopParticles(){ state.particlesRunning=false; if(particleIntervalL){ clearInterval(particleIntervalL); particleIntervalL=null; } if(particleIntervalR){ clearInterval(particleIntervalR); particleIntervalR=null; } }
+
+    function updatePlayUI(){ if(bgm.paused){ balloonIcon.textContent='▶'; stopParticles(); } else { balloonIcon.textContent='⏸'; startParticles(); } }
+    bgm.addEventListener('play',()=>{ updatePlayUI(); hint.classList.remove('show'); });
+    bgm.addEventListener('pause',updatePlayUI); bgm.addEventListener('ended',updatePlayUI);
+    hotAirBalloon.addEventListener('click',()=>{ if(!hotAirBalloon.classList.contains('visible')) return; if(bgm.paused) bgm.play().catch(()=>{}); else bgm.pause(); hint.classList.remove('show'); });
+    hotAirBalloon.addEventListener('keydown',e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); hotAirBalloon.click(); } });
+
+    function goStageSelect(){
+      hideAll(); $('fwWrap').classList.add('hidden');
+      $('cakeDecor').classList.remove('hidden'); body.classList.add('stage-select');
+      $('musicPage').classList.remove('hidden'); $('controlPanel').classList.remove('hidden');
+      body.classList.remove('mode-scene');
+    }
+
+    /* 登录逻辑：错/空 → 直接给出正确答案作为占位符 */
+    $('btnIdLogin').addEventListener('click',()=>{
+      const u=$('username').value.trim(); const p=$('password').value.trim();
+      const ok = (u===cfg.login.username && p===cfg.login.password);
+      if(ok){ goStageSelect(); }
+      else{
+        if(u!==cfg.login.username){ markInvalidToAnswer($('username'), cfg.login.username); }
+        if(p!==cfg.login.password){ markInvalidToAnswer($('password'), cfg.login.password); }
+      }
+    });
+    $('btnAnonLogin').addEventListener('click',()=>{ goStageSelect(); });
+
+    /* 剧情选择 */
+    function chooseStory(key,ev){
+      if(!STORIES[key]) return;
+      state.currentKey=key; state.story=STORIES[key]; state.theme=state.story.theme;
+      if(ev && ev.clientX && ev.clientY) confettiBurst(ev.clientX,ev.clientY,20);
+      setBodyTheme(state.theme);
+      Promise.allSettled([checkImage(state.story.bgImage), checkAudio(state.story.audio)]).finally(enterScene);
+    }
+
+    function enterScene(){
+      $('fwWrap').classList.add('hidden'); $('cakeDecor').classList.add('hidden'); body.classList.remove('stage-select');
+      bgm.src=state.story.audio; bgm.currentTime=0; bgm.play().catch(()=>{ hint.classList.add('show'); });
+      hideAll(); firstScene.classList.remove('hidden'); controlPanel.classList.add('hidden'); body.classList.add('mode-scene');
+      firstScene.style.setProperty('--scene-image-url', `url('${state.story.bgImage}')`);
+      sceneTitle.textContent=state.story.title||''; sceneSub.textContent=state.story.subtitle||''; sceneText.textContent='';
+      typeWriterMulti(state.story.text||'', 'sceneText', ()=>{ sceneCTA.classList.remove('hidden'); positionSceneCTA(); $('poemButton')?.focus(); });
+      hotAirBalloon.classList.add('visible'); hint.classList.add('show'); skyLantern.classList.add('visible'); bgm.onerror=()=>{};
+    }
+
+    function checkImage(url){ return new Promise((resolve,reject)=>{ const img=new Image(); const t=setTimeout(()=>{reject(new Error('timeout'));},8000); img.onload=()=>{clearTimeout(t); resolve(true);}; img.onerror=()=>{clearTimeout(t); reject(new Error('error'));}; img.src=url; }); }
+    function checkAudio(url){ return new Promise((resolve,reject)=>{ const a=new Audio(); const t=setTimeout(()=>{cleanup(); reject(new Error('timeout'));},8000); function cleanup(){ a.removeEventListener('canplaythrough',ok); a.removeEventListener('error',bad);} function ok(){ clearTimeout(t); cleanup(); resolve(true);} function bad(){ clearTimeout(t); cleanup(); reject(new Error('error')); } a.addEventListener('canplaythrough',ok); a.addEventListener('error',bad); a.src=url; a.load(); }); }
+
+    /* CTA 位置自适应（考虑内容变化/键盘） */
+    function positionSceneCTA(gap=12){
+      if(firstScene.classList.contains('hidden') || sceneCTA.classList.contains('hidden')) return;
+      const rect=firstScene.getBoundingClientRect();
+      const top=rect.bottom + gap; const maxTop=window.innerHeight - 60;
+      sceneCTA.style.top = Math.min(top, maxTop) + 'px';
+    }
+    new ResizeObserver(()=>positionSceneCTA()).observe(firstScene);
+    window.addEventListener('resize',positionSceneCTA,{passive:true});
+    window.addEventListener('scroll',positionSceneCTA,{passive:true});
+
+    /* 诗句页：错/空 → 占位符改成正确答案（无提示条） */
+    function goToPoem(){
+      $('fwWrap').classList.add('hidden'); hideAll(); poemPage.classList.remove('hidden');
+      body.classList.remove('mode-scene'); hotAirBalloon.classList.remove('visible'); hint.classList.remove('show'); skyLantern.classList.remove('visible'); stopParticles();
+      sceneCTA.classList.add('hidden'); poemTop.textContent=state.story.poemTop||''; poemInput.value='';
+      setTimeout(()=>{ poemInput.scrollIntoView({block:'center', behavior:'smooth'}); poemInput.focus(); }, 80);
+    }
+    const normalize=s=> (s||'').replace(/[\s\p{P}]/gu,'').toLowerCase();
+
+    function checkPoemAnswer(){
+      const user=poemInput.value.trim(); const expect=state.story.poemAnswer||'';
+      if(!user || normalize(user)!==normalize(expect)){
+        markInvalidToAnswer(poemInput, expect); // 直接给出正确答案
+      } else { toFinal(); }
+    }
+    function autoCompletePoem(){ const expect=state.story?.poemAnswer||''; poemInput.value=expect; setTimeout(()=>{ launchBalloonCurtain(()=>{ toFinal(); }); },200); }
+
+    /* 修复：进入时显示幕层 & 清空，再播放动画 */
+    function launchBalloonCurtain(done){
+      balloonCurtain.classList.remove('hidden');
+      balloonCurtain.innerHTML = '';
+
+      const W=window.innerWidth; const count=Math.max(8, Math.floor(W/110));
+      const duration=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--curtain-duration'))||1800;
+      for(let i=0;i<count;i++){
+        const b=createCurtainBalloon(); const colW=W/count; const x=i*colW + colW/2 + (Math.random()*colW*0.35 - colW*0.175);
+        const delay=Math.random()*260; b.style.left=Math.max(6, x-32)+'px'; balloonCurtain.appendChild(b);
+        const up=120+Math.random()*20, sway=(Math.random()*40-20), rot=(Math.random()*12-6), d=duration+Math.random()*260;
+        b.animate([{transform:'translate(0, 20vh) rotate(0deg)', opacity:0},{transform:`translate(${sway/2}px, -${up/2}vh) rotate(${rot/2}deg)`, opacity:1, offset:.45},{transform:`translate(${sway}px, -${up}vh) rotate(${rot}deg)`, opacity:.2}],{duration:d, delay, easing:'cubic-bezier(.25,.8,.25,1)'});
+      }
+      setTimeout(()=>{ balloonCurtain.classList.add('hidden'); balloonCurtain.innerHTML=''; if(typeof done==='function') done(); }, duration+320);
+    }
+    function createCurtainBalloon(){ const wrap=document.createElement('div'); wrap.className='curtain-balloon'; const svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width','64'); svg.setAttribute('height','96'); svg.setAttribute('viewBox','0 0 200 320'); const defs=createSVG('defs'); const grad=createSVG('linearGradient',{id:`cg-${Math.random().toString(36).slice(2)}`,x1:'0',y1:'0',x2:'0',y2:'1'}); const s=getComputedStyle(document.documentElement).getPropertyValue('--theme-grad-start').trim()||'#3b82f6'; const e=getComputedStyle(document.documentElement).getPropertyValue('--theme-grad-end').trim()||'#06b6d4'; grad.appendChild(createSVG('stop',{offset:'0%','stop-color':s})); grad.appendChild(createSVG('stop',{offset:'100%','stop-color':e})); defs.appendChild(grad); svg.appendChild(defs); svg.appendChild(createSVG('ellipse',{cx:100,cy:100,rx:80,ry:100,fill:`url(#${grad.getAttribute('id')})`,stroke:'rgba(255,255,255,.15)','stroke-width':'2'})); svg.appendChild(createSVG('line',{x1:78,y1:190,x2:84,y2:247,stroke:'#8b5e3c','stroke-width':'3','stroke-linecap':'round'})); svg.appendChild(createSVG('line',{x1:122,y1:190,x2:116,y2:247,stroke:'#8b5e3c','stroke-width':'3','stroke-linecap':'round'})); svg.appendChild(createSVG('rect',{x:76,y:247,width:48,height:36,rx:6,ry:6,fill:'#c48a64',stroke:'#8b5e3c','stroke-width':'2'})); wrap.appendChild(svg); return wrap; }
+
+    /* 终章 */
+    function toFinal(){
+      clearAllTimers(); hideAll();
+      ensureFireworkLoaded(); // 懒加载 + 自动回退
+      fwWrap.classList.remove('hidden'); finalPage.classList.remove('hidden');
+      const header='🎂 生日快乐 🎂\n'; const line=state.story?.finalMessage || '愿此后路途，皆有星火可寻。';
+      typeWriterMulti(header + line, 'finalText');
+      const key=state.currentKey; const badgeMap={ nature:'向阳', wish:'愿望', adventure:'奇遇' };
+      if(key && badgeMap[key]){ $('finalBadgeText').textContent=badgeMap[key]; $('finalBadge').classList.remove('hidden'); $('finalBadge').setAttribute('aria-hidden','false'); }else{ $('finalBadge').classList.add('hidden'); $('finalBadge').setAttribute('aria-hidden','true'); }
+      hotAirBalloon.classList.remove('visible'); skyLantern.classList.remove('visible'); hint.classList.remove('show'); stopParticles(); sceneCTA.classList.add('hidden');
+      postFireworkMessage('play');
+    }
+    function restart(){ fwWrap.classList.add('hidden'); body.classList.remove('clean'); hotAirBalloon.classList.remove('visible'); skyLantern.classList.remove('visible'); hint.classList.remove('show'); stopParticles(); bgm.pause(); bgm.currentTime=0; sceneCTA.classList.add('hidden'); clearAllTimers(); $('cakeDecor').classList.add('hidden'); body.classList.remove('mode-scene','stage-select'); hideAll(); loginPage.classList.remove('hidden'); }
+
+    function enterCleanFirework(){ body.classList.add('clean'); ensureFireworkLoaded(); fwWrap.classList.remove('hidden'); postFireworkMessage('play'); }
+    function exitCleanFirework(){ body.classList.remove('clean'); }
+
+    /* 空格键播放/暂停 */
+    window.addEventListener('keydown',(e)=>{ const tag=(document.activeElement.tagName||'').toUpperCase(); if(e.code==='Space' && tag!=='INPUT' && tag!=='TEXTAREA'){ e.preventDefault(); if(bgm.paused) bgm.play().catch(()=>{}); else bgm.pause(); hint.classList.remove('show'); } });
+    window.addEventListener('beforeunload',()=>{ clearAllTimers(); });
+
+    /* 不再清空 iframe.src；仅通知 iframe 暂停/恢复（若其支持） */
+    document.addEventListener('visibilitychange',()=>{ if(document.hidden){ postFireworkMessage('pause'); bgm.pause(); } else { postFireworkMessage('resume'); } });
+
+    /* 烟花：按优先级加载 + 超时自动回退（并在 onload 补发 play） */
+    function ensureFireworkLoaded(){
+      if(state.fwLoaded) return;
+      const online = cfg.fireworkOnlineURL, local = cfg.fireworkLocalURL;
+      const list = cfg.FIREWORK_PRIORITY==='local-first' ? [local, online] : [online, local];
+      tryLoadWithFallback(list, 6000).then(()=>{ state.fwLoaded=true; }).catch(()=>{ /* 静默失败 */ });
+      function tryLoadWithFallback(urls, timeoutMs){
+        return new Promise((resolve,reject)=>{
+          let idx=0;
+          const tryNext=()=>{
+            if(idx>=urls.length) return reject();
+            const url=urls[idx++]; const timer=setTimeout(()=>{ fwFrame.onload=null; fwFrame.onerror=null; tryNext(); }, timeoutMs);
+            fwFrame.onload=()=>{ clearTimeout(timer); postFireworkMessage('play'); resolve(); };
+            fwFrame.onerror=()=>{ clearTimeout(timer); tryNext(); };
+            fwFrame.src=url;
+          };
+          tryNext();
+        });
+      }
+    }
+    function postFireworkMessage(cmd){ try{ fwFrame?.contentWindow?.postMessage({type:'firework-control', cmd}, '*'); }catch(e){} }
+
+    function confettiBurst(x,y,n=18){
+      for(let i=0;i<n;i++){
+        const c=document.createElement('div'); c.className='confetti';
+        c.style.position='fixed'; c.style.left=x+'px'; c.style.top=y+'px';
+        c.style.width='8px'; c.style.height='12px'; c.style.borderRadius='2px'; c.style.zIndex='1200';
+        c.style.pointerEvents='none'; c.style.opacity='.9';
+        c.style.background=['#fb7185','#f59e0b','#fbbf24','#34d399','#60a5fa','#a78bfa'][Math.floor(Math.random()*6)];
+        const dx=(Math.random()*200-100), dur=700+Math.random()*500, rot=(Math.random()<.5?1:-1)*360;
+        c.animate([{transform:`translate(0,0) rotate(0)`},{transform:`translate(${dx}px,-120px) rotate(${rot}deg)`,opacity:.1}],{duration:dur,easing:'ease-out'});
+        document.body.appendChild(c); setTimeout(()=>c.remove(),dur+40);
+      }
+    }
+
+    (function initVars(){
+      document.documentElement.style.setProperty('--panel-w', cfg.UI_SIZE.panelW+'px');
+      document.documentElement.style.setProperty('--panel-w-wide', cfg.UI_SIZE.panelWWide+'px');
+      document.documentElement.style.setProperty('--control-w', cfg.UI_SIZE.controlW+'px');
+      document.documentElement.style.setProperty('--ornament-size', cfg.UI_SIZE.ornamentSize+'px');
+    })();
+  </script>
+</body>
+</html>
