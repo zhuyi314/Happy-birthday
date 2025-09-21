@@ -4,7 +4,7 @@
 
 一个无需代码基础即可修改音乐、文案、图片、背景颜色等设计的生日祝福/浪漫表白页面。  
 
-终章的烟花，来自于：https://github.com/jeyrce/vv-happy-birthday/tree/main/2023/firework
+终章的烟花，来自于：[firework](https://github.com/jeyrce/vv-happy-birthday/tree/main/2023/firework)
 
 
 **在线演示（GitHub Pages）**：https://zhuyi314.github.io/happy-birthday/
