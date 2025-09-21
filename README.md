@@ -7,7 +7,7 @@
 终章的烟花，来自于：[firework](https://github.com/jeyrce/vv-happy-birthday/tree/main/2023/firework)
 
 
-**在线演示（GitHub Pages）**：https://zhuyi314.github.io/happy-birthday/
+**在线演示（GitHub Pages）**：https://github-hb.zhuyi314.love/
 
 ---
 
